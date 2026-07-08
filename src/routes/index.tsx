@@ -414,6 +414,3 @@ function Tree({ node, depth }: { node: TreeNode; depth: number }) {
     </div>
    );
 }
-    </div>
-  );
-}
