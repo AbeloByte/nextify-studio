@@ -27,18 +27,18 @@ type FileMap = Record<string, string>;
 export function buildFiles(cfg: Config): FileMap {
   const files: FileMap = {};
   const deps: Record<string, string> = {
-    next: "15.0.0",
-    react: "19.0.0",
-    "react-dom": "19.0.0",
+    next: "^15.5.0",
+    react: "^19.1.0",
+    "react-dom": "^19.1.0",
   };
   const devDeps: Record<string, string> = {
-    typescript: "^5",
-    "@types/node": "^22",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    tailwindcss: "^4",
-    "@tailwindcss/postcss": "^4",
-    postcss: "^8",
+    typescript: "^5.7.2",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    tailwindcss: "^4.0.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    postcss: "^8.4.49",
   };
   const scripts: Record<string, string> = {
     dev: "next dev",
@@ -47,36 +47,37 @@ export function buildFiles(cfg: Config): FileMap {
   };
 
   if (cfg.shadcn) {
-    deps["class-variance-authority"] = "^0.7.0";
-    deps["clsx"] = "^2.1.0";
-    deps["tailwind-merge"] = "^2.5.0";
-    deps["lucide-react"] = "^0.454.0";
+    deps["class-variance-authority"] = "^0.7.1";
+    deps["clsx"] = "^2.1.1";
+    deps["tailwind-merge"] = "^2.5.5";
+    deps["lucide-react"] = "^0.468.0";
+    deps["@radix-ui/react-slot"] = "^1.1.1";
   }
-  if (cfg.dataFetching === "tanstack") deps["@tanstack/react-query"] = "^5.59.0";
-  if (cfg.stateManagement === "zustand") deps["zustand"] = "^5.0.0";
-  if (cfg.stateManagement === "jotai") deps["jotai"] = "^2.10.0";
+  if (cfg.dataFetching === "tanstack") deps["@tanstack/react-query"] = "^5.62.7";
+  if (cfg.stateManagement === "zustand") deps["zustand"] = "^5.0.2";
+  if (cfg.stateManagement === "jotai") deps["jotai"] = "^2.11.0";
   if (cfg.forms) {
-    deps["react-hook-form"] = "^7.53.0";
-    deps["zod"] = "^3.23.0";
-    deps["@hookform/resolvers"] = "^3.9.0";
+    deps["react-hook-form"] = "^7.54.1";
+    deps["zod"] = "^3.24.1";
+    deps["@hookform/resolvers"] = "^3.10.0";
   }
   if (cfg.prettier) {
-    devDeps["prettier"] = "^3.3.0";
-    devDeps["prettier-plugin-tailwindcss"] = "^0.6.0";
+    devDeps["prettier"] = "^3.4.2";
+    devDeps["prettier-plugin-tailwindcss"] = "^0.6.9";
     scripts["format"] = "prettier --write .";
   }
   if (cfg.eslint) {
-    devDeps["eslint"] = "^9";
-    devDeps["eslint-config-next"] = "15.0.0";
+    devDeps["eslint"] = "^9.17.0";
+    devDeps["eslint-config-next"] = "^15.5.0";
     scripts["lint"] = "next lint";
   }
   if (cfg.husky) {
-    devDeps["husky"] = "^9.1.0";
-    devDeps["lint-staged"] = "^15.2.0";
+    devDeps["husky"] = "^9.1.7";
+    devDeps["lint-staged"] = "^15.2.11";
     scripts["prepare"] = "husky";
   }
   if (cfg.auth === "nextauth") {
-    deps["next-auth"] = "^5.0.0-beta.20";
+    deps["next-auth"] = "^5.0.0-beta.25";
   }
 
   const sortObj = (o: Record<string, string>) =>
@@ -157,6 +158,19 @@ export default nextConfig;
   files["postcss.config.mjs"] = `export default { plugins: { "@tailwindcss/postcss": {} } };\n`;
 
   files["src/app/globals.css"] = `@import "tailwindcss";\n\n:root {\n  --background: #ffffff;\n  --foreground: #171717;\n}\n\nbody {\n  background: var(--background);\n  color: var(--foreground);\n  font-family: system-ui, sans-serif;\n}\n`;
+
+  // Tailwind v4 uses CSS-first config. Ship a minimal tailwind.config.ts
+  // for editor tooling / IntelliSense that points at the src/ directory.
+  files["tailwind.config.ts"] = `import type { Config } from "tailwindcss";
+
+const config: Config = {
+  content: ["./src/**/*.{ts,tsx,mdx}"],
+  theme: { extend: {} },
+  plugins: [],
+};
+
+export default config;
+`;
 
   // Providers
   const providerImports: string[] = [];
@@ -289,6 +303,57 @@ export function ExampleForm() {
     files["src/lib/utils.ts"] = `import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
+`;
+    files["src/components/ui/button.tsx"] = `import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default: "bg-neutral-900 text-neutral-50 hover:bg-neutral-900/90",
+        destructive: "bg-red-500 text-neutral-50 hover:bg-red-500/90",
+        outline:
+          "border border-neutral-200 bg-white hover:bg-neutral-100 hover:text-neutral-900",
+        secondary: "bg-neutral-100 text-neutral-900 hover:bg-neutral-100/80",
+        ghost: "hover:bg-neutral-100 hover:text-neutral-900",
+        link: "text-neutral-900 underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-10 px-4 py-2",
+        sm: "h-9 rounded-md px-3",
+        lg: "h-11 rounded-md px-8",
+        icon: "h-10 w-10",
+      },
+    },
+    defaultVariants: { variant: "default", size: "default" },
+  },
+);
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+}
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    );
+  },
+);
+Button.displayName = "Button";
+
+export { buttonVariants };
 `;
     files["components.json"] = JSON.stringify(
       {
